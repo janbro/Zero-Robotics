@@ -10,25 +10,25 @@ bool memFull,on;
 int sphere,spherePoi,timeToFlare,time,poiZone,lastMem,picTries,poi[3],picTaken;
 
 void init(){
-	//This function is called once when your code is first loaded.
+    //This function is called once when your code is first loaded.
 
-	//IMPORTANT: make sure to set any variables that need an initial value.
-	//Do not assume variables will be set to 0 automatically!
-	on=true;
-	time=center[0]=center[1]=center[2]=lastMem=picTries=poiZone=picTaken=0;
-	poi[0]=poi[1]=poi[2]=2;
-	api.getMyZRState(myState);
-	api.getOtherZRState(otherState);
-	sphere=myState[1]>0.0?1:-1;//Blue Sphere = 1
-	spherePoi=sphere>0?1:0;
+    //IMPORTANT: make sure to set any variables that need an initial value.
+    //Do not assume variables will be set to 0 automatically!
+    on=true;
+    time=center[0]=center[1]=center[2]=lastMem=picTries=poiZone=picTaken=0;
+    poi[0]=poi[1]=poi[2]=2;
+    api.getMyZRState(myState);
+    api.getOtherZRState(otherState);
+    sphere=myState[1]>0.0?1:-1;//Blue Sphere = 1
+    spherePoi=sphere>0?1:0;
     game.getPOILoc(poi1,0);
     game.getPOILoc(poi2,1);
     game.getPOILoc(poi3,2);
 }
 
 void updateVariables(){
-	api.getMyZRState(myState);
-	api.getOtherZRState(otherState);
+    api.getMyZRState(myState);
+    api.getOtherZRState(otherState);
     timeToFlare = game.getNextFlare();
     if((picTries<5&&game.getMemoryFilled()==0)||time%60==0){
         lastMem = 0;
@@ -48,59 +48,59 @@ void updateVariables(){
 }
 
 void loop(){
-	//This function is called once per second.  Use it to control the satellite.
-	updateVariables();
+    //This function is called once per second.  Use it to control the satellite.
+    updateVariables();
 
-	facePos(center); //Always face the center
+    facePos(center); //Always face the center
 
-	if((timeToFlare>2||timeToFlare==-1)&&!on){ //Turn sphere back on
-	    game.turnOn();
-	    on=true;
-	}
-	else if(timeToFlare!=-1&&timeToFlare<=2&&on){ //Auto Shutdown, doesn't let sphere be on during solar flare
-	    game.turnOff();
-	    on=false;
-	}
-	if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>12||timeToFlare==-1)&&time<230){ //If we have memory space and no incoming solar flare;
-    	switch(poiZone){
-	        case 0: //Outer Ring
-			    spherePoi = calcClosestPoi();
-                calcPoiEntry(spherePoi,tP1,.41f);//.430f
-	            safeSetPosition(tP1,.175f);//.15
-	            break;
-    	    case 1: //Inner Ring
-            	spherePoi = calcClosestPoi();
-	            calcPoiEntry(spherePoi,tP1,.36f);//.370f
-	            safeSetPosition(tP1,.175f);//.15
-	            break;
-	    }
-	    mathVecSubtract(tempVec,center,myState,3);
-	    if(game.alignLine(spherePoi)&&distance(myState,tP1)<.025f){//&&mathVecInner(tP1,tempVec,3)<.05f){ //If in range, take picture
-	        game.takePic(spherePoi);
-	        picTries++;
-	        if(game.getMemoryFilled()>lastMem||picTries>5){ //Successfully taken picture or stuck taking pic, go to next poi
-	            poiZone++;
-	        }
-	    }
-	}else{
-	    if(game.getMemoryFilled()>0){ //Upload pictures in memory
-	        //float memPack[] = {-.5,sphere*.6,0};
+    if((timeToFlare>2||timeToFlare==-1)&&!on){ //Turn sphere back on
+        game.turnOn();
+        on=true;
+    }
+    else if(timeToFlare!=-1&&timeToFlare<=2&&on){ //Auto Shutdown, doesn't let sphere be on during solar flare
+        game.turnOff();
+        on=false;
+    }
+    if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>12||timeToFlare==-1)&&time<230){ //If we have memory space and no incoming solar flare;
+        switch(poiZone){
+            case 0: //Outer Ring
+                spherePoi = calcClosestPoi();
+                calcPoiEntry(spherePoi,tP1,.43f);//.430f
+                safeSetPosition(tP1,.15f);//.15
+                break;
+            case 1: //Inner Ring
+                spherePoi = calcClosestPoi();
+                calcPoiEntry(spherePoi,tP1,.37f);//.370f
+                safeSetPosition(tP1,.15f);//.15
+                break;
+        }
+        mathVecSubtract(tempVec,center,myState,3);
+        if(game.alignLine(spherePoi)&&distance(myState,tP1)<.025f){//&&mathVecInner(tP1,tempVec,3)<.05f){ //If in range, take picture
+            game.takePic(spherePoi);
+            picTries++;
+            if(game.getMemoryFilled()>lastMem||picTries>5){ //Successfully taken picture or stuck taking pic, go to next poi
+                poiZone++;
+            }
+        }
+    }else{
+        if(game.getMemoryFilled()>0){ //Upload pictures in memory
+            //float memPack[] = {-.5,sphere*.6,0};
           calcPoiEntry(spherePoi,tP1,.6);
-	        safeSetPosition(tP1,.2f);
-	        game.uploadPic();
-    	    if(distance(myState,center)>.5&&time-picTaken>3){
-	            game.uploadPic();
-	            picTries=0;
-	            if(time>60)
-					poi[spherePoi]-=game.getMemoryFilled();
-	            poiZone=0;
-	            picTaken = time;
-	        }
-    	}else{ //Stop
-    	    api.setVelocityTarget(center);
-    	    game.takePic(spherePoi);
-    	}
-	}
+            safeSetPosition(tP1,.2f);
+            game.uploadPic();
+            if(distance(myState,center)>.5&&time-picTaken>3){
+                game.uploadPic();
+                picTries=0;
+                if(time>60)
+                    poi[spherePoi]-=game.getMemoryFilled();
+                poiZone=0;
+                picTaken = time;
+            }
+        }else{ //Stop
+            api.setVelocityTarget(center);
+            game.takePic(spherePoi);
+        }
+    }
 }
 
 int calcClosestPoi(){
@@ -154,18 +154,18 @@ void calcPoiEntry(int poiID, float poi[3],float radius){
 }
 
 float distance(float startLoc[3],float targetLoc[3]){ //Distance between two 3d vectors
-	float tempVec[3];
-	mathVecSubtract(tempVec,targetLoc,startLoc,3);
-	return mathVecMagnitude(tempVec,3);
+    float tempVec[3];
+    mathVecSubtract(tempVec,targetLoc,startLoc,3);
+    return mathVecMagnitude(tempVec,3);
 }
 
 float facePos(float target[3]){ //Points sphere to passed target
-	//Rotate to target
-	float attTarget[3];
-	mathVecSubtract(attTarget,target,myState,3);
-	mathVecNormalize(attTarget,3);
-	api.setAttitudeTarget(attTarget);
-	return distance(attTarget,&myState[6]);
+    //Rotate to target
+    float attTarget[3];
+    mathVecSubtract(attTarget,target,myState,3);
+    mathVecNormalize(attTarget,3);
+    api.setAttitudeTarget(attTarget);
+    return distance(attTarget,&myState[6]);
 }
 
 void safeSetPosition(float tP[3],float speed){
@@ -198,47 +198,47 @@ void doOrbit(float targetPos[3],float speed){
         angle=2*PI-angle;
     }
     mathVecSubtract(tempVec,targetPos,myState,3);
-	if(tempVec[0]==0)
-	    tempVec[0]=-1;
-	if(tempVec[1]==0)
-	    tempVec[1]=-1;
-	//Calc Orbit Direction
-	if(fabsf(tempVec[1])/tempVec[1]*fabsf(tempVec[0])/tempVec[0]>0){
-	    angle-=(20*PI/180);//clockwise
-	}
-	else{
-	    angle+=(20*PI/180);
-	}
-	//Calculate position on orbit circle
+    if(tempVec[0]==0)
+        tempVec[0]=-1;
+    if(tempVec[1]==0)
+        tempVec[1]=-1;
+    //Calc Orbit Direction
+    if(fabsf(tempVec[1])/tempVec[1]*fabsf(tempVec[0])/tempVec[0]>0){
+        angle-=(20*PI/180);//clockwise
+    }
+    else{
+        angle+=(20*PI/180);
+    }
+    //Calculate position on orbit circle
     targetPos[0] = radius * cosf(angle);
-	targetPos[1] = radius * sinf(angle);
-	//Rotate to 3D
-	mathVecAdd(tempVec,myState,otherState,3);
-	mathVecNormalize(tempVec,3);
-	float xAxis[3] = {1.0f,0.0f,0.0f};
-	float yAxis[3] = {0.0f,1.0f,0.0f};
-	float zAxis[3] = {0.0f,0.0f,1.0f};
-	float rots[3] = {mathVecInner(tempVec,xAxis,3),mathVecInner(tempVec,yAxis,3),mathVecInner(tempVec,zAxis,3)};
-	rotate(targetPos,targetPos,rots);
-	setPos(targetPos,speed);
+    targetPos[1] = radius * sinf(angle);
+    //Rotate to 3D
+    mathVecAdd(tempVec,myState,otherState,3);
+    mathVecNormalize(tempVec,3);
+    float xAxis[3] = {1.0f,0.0f,0.0f};
+    float yAxis[3] = {0.0f,1.0f,0.0f};
+    float zAxis[3] = {0.0f,0.0f,1.0f};
+    float rots[3] = {mathVecInner(tempVec,xAxis,3),mathVecInner(tempVec,yAxis,3),mathVecInner(tempVec,zAxis,3)};
+    rotate(targetPos,targetPos,rots);
+    setPos(targetPos,speed);
 }
 
 void setPos(float targetPos[3],float speed)
 {
-	float velocityTarget[3];
-	mathVecSubtract(tempVec,targetPos,myState,3);
-	float distance = mathVecMagnitude(tempVec,3);
-	float speedTarget = distance*speed-distance*distance*0.1f;
-	if((speedTarget>.055f || distance>.3f))
-		speedTarget = .055f;
+    float velocityTarget[3];
+    mathVecSubtract(tempVec,targetPos,myState,3);
+    float distance = mathVecMagnitude(tempVec,3);
+    float speedTarget = distance*speed-distance*distance*0.1f;
+    if((speedTarget>.055f || distance>.3f))
+        speedTarget = .055f;
 
-	//sets the target velocity using the speed target and position target
-	for (int i = 0; i < 3; i++)
-		velocityTarget[i] = speedTarget*(targetPos[i]-myState[i])/distance;
+    //sets the target velocity using the speed target and position target
+    for (int i = 0; i < 3; i++)
+        velocityTarget[i] = speedTarget*(targetPos[i]-myState[i])/distance;
 
-	if(velocityTarget==NULL)
+    if(velocityTarget==NULL)
         return;
-	api.setVelocityTarget(velocityTarget);
+    api.setVelocityTarget(velocityTarget);
 }
 
 bool intersectsAsteroid(float targetPos[3]){
