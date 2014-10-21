@@ -58,7 +58,13 @@ void loop(){
         game.turnOff();
         on=false;
     }
-    if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>12||timeToFlare==-1)&&time<230){ //If we have memory space and no incoming solar flare
+    if(distance(myState,center)<.325f){
+        //Evasive Manuevers
+        mathVecSubtract(tempVec,otherState,myState,3);
+        mathVecScale(tempVec,5,false);
+        api.setForces(tempVec);
+    }
+    else if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>12||timeToFlare==-1)&&time<230){ //If we have memory space and no incoming solar flare
         switch(poiZone){
             case 0: //Outer Ring
                 calcPoiEntry(spherePoi,tP1,.4425f);//.430f,.4425f
@@ -216,6 +222,8 @@ void setPos(float targetPos[3],float speed)
     //sets the target velocity using the speed target and position target
     for (int i = 0; i < 3; i++)
         velocityTarget[i] = speedTarget*(targetPos[i]-myState[i])/distance;
+    if(willCollide(3))
+        mathVecScale(velocityTarget,2,false);
     api.setVelocityTarget(velocityTarget);
 }
 
@@ -249,4 +257,12 @@ bool willCollide(int timeInFuture){
     if(mathVecMagnitude(tempVec,3)<.15f)
         return true;
     return false;
+}
+
+void mathVecScale(float src[3], float mag, bool norm)
+{
+    if(norm) mathVecNormalize(src,3);
+    src[0]*=mag;
+    src[1]*=mag;
+    src[2]*=mag;
 }
