@@ -222,8 +222,6 @@ void setPos(float targetPos[3],float speed)
     //sets the target velocity using the speed target and position target
     for (int i = 0; i < 3; i++)
         velocityTarget[i] = speedTarget*(targetPos[i]-myState[i])/distance;
-    if(willCollide(3))
-        mathVecScale(velocityTarget,2,false);
     api.setVelocityTarget(velocityTarget);
 }
 
