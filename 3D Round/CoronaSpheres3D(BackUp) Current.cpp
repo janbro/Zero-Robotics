@@ -1,11 +1,9 @@
-//TODO: Add go to second poi in one 60 second interval
-//      Fix asteroid line collision detection(orbit disabled for now)
-//      Take pics in outer poizone of two poi if close together
-//      Add poi change decision based on distance from new poi and time left in 60 second interval
+//TODO: 
+//      Fix asteroid line collision!!!(orbit disabled for now)
 
 //Declare any variables shared between functions here
 float myState[12],otherState[12],tempVec[3],tP1[3],targetEntryPoint[3],targetVel[3],targetAttRate[3],poi1[3],poi2[3],poi3[3],center[3];
-float mid[3];
+float mid[3],oldSpot[3];
 bool memFull,on;
 int sphere,spherePoi,timeToFlare,time,poiZone,lastMem,picTries,poi[3],picTaken;
 
@@ -63,17 +61,17 @@ void loop(){
         game.turnOff();
         on=false;
     }
-    if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>12||timeToFlare==-1)){ //If we have memory space and no incoming solar flare;
+    else if(game.getMemoryFilled()<2&&poiZone<2&&(timeToFlare>14||timeToFlare==-1)&&time<233){ //If we have memory space and no incoming solar flare;
         switch(poiZone){
             case 0: //Outer Ring
-              spherePoi = calcClosestPoi();
+              spherePoi = calcClosestPoi(true,true,true);
               calcPoiEntry(spherePoi,tP1,.43f);//.430f
-                safeSetPosition(tP1,.15f);//.15
+                safeSetPosition(tP1,.2f);//.15
                 break;
             case 1: //Inner Ring
-                spherePoi = calcClosestPoi();
+                spherePoi = calcClosestPoi(true,true,true);
                 calcPoiEntry(spherePoi,tP1,.39f);//.370f
-                safeSetPosition(tP1,.15f);//.15
+                safeSetPosition(tP1,.2f);//.15
                 break;
         }
         mathVecSubtract(tempVec,center,myState,3);
@@ -87,8 +85,6 @@ void loop(){
     }else{
         if(game.getMemoryFilled()>0){ //Upload pictures in memory
             //float memPack[] = {-.5,sphere*.6,0};
-            calcPoiEntry(spherePoi,tP1,.7);
-            safeSetPosition(tP1,.2f);
             if(distance(myState,center)>.5&&time-picTaken>4){
                 DEBUG(("Poi[%d]:%d\n",spherePoi,game.getMemoryFilled()));
                 picTries=0;
@@ -97,27 +93,35 @@ void loop(){
                 poiZone=0;
                 picTaken = time;
                 game.uploadPic();
+                api.setVelocityTarget(center);
+                game.takePic(spherePoi);
+            }else{
+                calcPoiEntry(spherePoi,tP1,.6);
+                safeSetPosition(tP1,.5f);
             }
         }else{ //Stop
-            api.setVelocityTarget(center);
-            game.takePic(spherePoi);
+            //api.setVelocityTarget(center);
+           // game.takePic(spherePoi);
+            spherePoi = calcClosestPoi(true,true,true);
+            calcPoiEntry(spherePoi,tP1,.43f);//.430f
+            safeSetPosition(tP1,.2f);//.15
         }
     }
 }
 
-int calcClosestPoi(){
+int calcClosestPoi(bool p1, bool p2, bool p3){
     float dist1 = 0;
-    if(poi[0]>0)
+    if(poi[0]>0&&p1)
         dist1 = distance(poi1,myState);
     else
         dist1 = 10000.0f;
     float dist2 = 0;
-    if(poi[1]>0)
+    if(poi[1]>0&&p2)
         dist2 = distance(poi2,myState);
     else
         dist2 = 10000.0f;
     float dist3 = 0;
-    if(poi[2]>0)
+    if(poi[2]>0&&p3)
         dist3 = distance(poi3,myState);
     else
         dist3 = 10000.0f;
@@ -173,7 +177,7 @@ float facePos(float target[3]){ //Points sphere to passed target
 
 void safeSetPosition(float tP[3],float speed){
     //if(intersectsAsteroid(tP)){
-    //    doOrbit(tP,speed);
+    //    //doOrbit(tP,speed);
     //}
     //else{
         setPos(tP,speed);
@@ -248,16 +252,40 @@ void setPos(float targetPos[3],float speed)
 }
 
 bool intersectsAsteroid(float targetPos[3]){
-    float d = sqrtf((powf(myState[1]*targetPos[2]-myState[2]*targetPos[1],2)+powf(myState[2]*targetPos[0]-myState[0]*targetPos[2],2)+powf(myState[0]*targetPos[1]-myState[1]*targetPos[0],2))/(powf(targetPos[0]-myState[0],2)+powf(targetPos[1]-myState[1],2)+powf(targetPos[2]-myState[2],2)));
-    //DEBUG(("\nD:%f",d));
-    if(d>=0.31f){
-        //DEBUG(("Does not intersect"));
-        return false;
-    }
-    else{
-        //DEBUG(("Does intersect"));
-        return true;
-    }
+    float dir[3];
+        mathVecSubtract(dir,myState,targetPos,3);
+        float center[] = {0.0f,0.0f,0.0f};
+        float r = .32f; //Radius of danger zone
+        mathVecSubtract(tempVec,myState,center,3);
+        float res = powf(mathVecInner(dir,tempVec,3),2)-powf(mathVecMagnitude(tempVec,3),2)+powf(r,2);
+        //Once we've found no intersections, can determine to orbit or not. Rest is to reinforce concept
+        mathVecSubtract(tempVec,myState,targetPos,3);
+        if(res<0){ //Does not intersect
+                return false;
+        }else if(res==0){ //Intersects at one point
+                return true;
+        }else{//if res>0  //Intersects at two points
+                return true;
+        }/*
+        float diffVec[3];
+        mathVecSubtract(diffVec,targetPos,myState,3);
+        float dist = mathVecMagnitude(diffVec,3);
+        float lineToPoint[3];
+        mathVecSubtract(lineToPoint,center,myState,3);
+        float dot = mathVecInner(diffVec,lineToPoint,3);
+        float percOnLine = dot/dist;
+        if(percOnLine<0.0f)
+                percOnLine=0.0f;
+        else if(percOnLine>1.0f)
+                percOnLine = 1.0f;
+        float intersectionPoint[3];
+        mathVecSubtract(tempVec,targetPos,myState,3);
+        scalarMult(tempVec,percOnLine,3);
+        mathVecAdd(tempVec,myState,tempVec,3);
+        mathVecSubtract(tempVec,tempVec,center,3);
+        float len = mathVecMagnitude(tempVec,3);
+        DEBUG(("\nlen%f",len));
+        return len>=.31f;*/
 }
 
 bool willCollide(int timeInFuture){
