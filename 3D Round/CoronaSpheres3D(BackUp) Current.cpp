@@ -1,4 +1,4 @@
-//TODO: 
+//TODO: Fix uploading of previous intervals pictures as current intervals pictures
 //      Fix asteroid line collision!!!(orbit disabled for now)
 
 //Declare any variables shared between functions here
